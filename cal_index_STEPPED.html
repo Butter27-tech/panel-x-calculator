@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel X - Project Calculator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Spline+Sans+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --bg:#f2ede5;--bg-card:#ffffff;--bg-input:#f8f4ee;
+  --line:#e4ddd2;--line-soft:#ede8df;
+  --gold:#b8832a;--gold-mid:#d9a441;--gold-bg:rgba(184,131,42,.09);--gold-border:rgba(184,131,42,.22);
+  --text:#1c1812;--text-dim:#6b5f4e;--text-faint:#a09080;
+  --good:#2d7a4a;--good-bg:rgba(45,122,74,.08);--good-border:rgba(45,122,74,.2);
+  --warn:#c05820;--warn-bg:rgba(192,88,32,.07);--warn-border:rgba(192,88,32,.2);
+  --shadow:0 1px 4px rgba(0,0,0,.05),0 6px 20px rgba(0,0,0,.06);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.04),0 16px 48px rgba(0,0,0,.08);
+  --r:14px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:'Archivo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+
+/* HERO */
+.hero{background:#f2ede5;border-bottom:1px solid var(--line);padding:32px 0 24px;text-align:center}
+.hero h1{font-size:2rem;font-weight:900;letter-spacing:-.025em;margin-bottom:8px}
+.hero .tagline{font-size:.85rem;color:var(--text-dim)}
+
+/* LAYOUT */
+.wrap{max-width:600px;margin:0 auto;padding:0 16px 60px}
+
+/* PROGRESS */
+.progress-wrap{display:flex;align-items:center;gap:12px;margin-bottom:32px}
+.progress-bar{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:var(--gold);transition:width .3s ease}
+.progress-text{font-size:.75rem;color:var(--text-faint);font-weight:600;letter-spacing:.05em;text-transform:uppercase;min-width:80px;text-align:right}
+
+/* STEP CONTAINER */
+.step{opacity:0;pointer-events:none;transform:translateY(20px);transition:all .3s ease;position:absolute;width:100%;padding:0 16px}
+.step.active{opacity:1;pointer-events:auto;transform:translateY(0);position:relative;width:auto}
+
+/* CARDS */
+.card{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r);padding:28px;box-shadow:var(--shadow);margin-bottom:20px}
+.card-title{font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:6px}
+.card-subtitle{font-size:.8rem;color:var(--text-faint);margin-bottom:20px;text-transform:uppercase;letter-spacing:.08em}
+
+/* FORM */
+label{display:block;font-size:.75rem;font-weight:700;letter-spacing:.08em;color:var(--text-faint);text-transform:uppercase;margin-bottom:8px;margin-top:16px}
+label:first-of-type{margin-top:0}
+input[type=number],input[type=text],input[type=tel],textarea,select{
+  width:100%;background:var(--bg-input);border:1.5px solid var(--line);border-radius:10px;
+  color:var(--text);font-family:'Archivo',sans-serif;font-size:.95rem;padding:12px 14px;
+  transition:border-color .18s,box-shadow .18s;-webkit-appearance:none;appearance:none
+}
+input[type=number]{font-family:'Spline Sans Mono',monospace}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,131,42,.1)}
+textarea{resize:vertical;min-height:80px;line-height:1.5}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%23b8832a' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:38px;cursor:pointer}
+.hint{font-size:.8rem;color:var(--text-faint);margin-top:6px;line-height:1.5}
+
+/* OPTION CARDS (for area type selection) */
+.option-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:16px}
+@media(min-width:500px){.option-grid{grid-template-columns:1fr 1fr}}
+.option-card{
+  border:2px solid var(--line);border-radius:12px;padding:16px;cursor:pointer;
+  transition:all .2s ease;background:var(--bg-card)
+}
+.option-card:hover{border-color:var(--gold);background:var(--gold-bg)}
+.option-card.selected{border-color:var(--gold);background:var(--gold-bg);box-shadow:0 0 0 3px rgba(184,131,42,.08)}
+.option-card .icon{font-size:1.8rem;margin-bottom:8px}
+.option-card .name{font-weight:700;font-size:.95rem;color:var(--text);margin-bottom:4px}
+.option-card .desc{font-size:.75rem;color:var(--text-faint);line-height:1.4}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 20px;border-radius:9px;
+  font-family:'Archivo';font-weight:700;font-size:.9rem;cursor:pointer;transition:all .15s;border:none;
+  min-height:44px;min-width:44px
+}
+.btn-primary{background:var(--gold);color:#fff;border:1.5px solid var(--gold);box-shadow:0 2px 8px rgba(184,131,42,.3)}
+.btn-primary:hover{background:#a57425;border-color:#a57425}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-secondary{background:transparent;border:1.5px solid var(--line);color:var(--text-dim)}
+.btn-secondary:hover{border-color:var(--gold);color:var(--gold)}
+.btn-nav{width:100%;margin-top:12px}
+
+.button-group{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap}
+.button-group .btn{flex:1;min-width:120px}
+
+/* SUMMARY */
+.summary-box{background:var(--gold-bg);border:1px solid var(--gold-border);border-radius:12px;padding:14px;
+  margin-top:16px;font-size:.85rem;line-height:1.6;color:var(--text-dim)
+}
+.summary-label{color:var(--text-faint);text-transform:uppercase;font-size:.7rem;font-weight:700;letter-spacing:.08em}
+.summary-value{color:var(--text);font-weight:600;margin-top:4px}
+
+/* RESULTS CARD */
+.result-card{border:1.5px solid var(--gold-border);box-shadow:var(--shadow-lg);background:var(--bg-card)}
+.result-title{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.result-number{font-family:'Spline Sans Mono';font-weight:600;font-size:2.2rem;color:var(--gold);line-height:1}
+.result-label{font-size:.7rem;color:var(--text-faint);text-transform:uppercase;letter-spacing:.1em;font-weight:700}
+.result-price{font-family:'Spline Sans Mono';font-weight:700;font-size:1.8rem;color:var(--text)}
+.result-price-label{font-size:.7rem;color:var(--text-faint);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-top:4px}
+
+.room-item{background:var(--bg-input);border:1px solid var(--line-soft);border-radius:10px;padding:12px;
+  margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;font-size:.9rem
+}
+.room-item-name{font-weight:700;color:var(--text)}
+.room-item-stat{font-family:'Spline Sans Mono';color:var(--text-dim);font-size:.85rem}
+
+/* PRINT */
+.print-btn{display:none}
+.print-btn.show{display:block}
+
+/* MOBILE */
+@media(max-width:520px){
+  .hero{padding:24px 0 20px}
+  .hero h1{font-size:1.6rem}
+  .card{padding:20px}
+  .button-group{gap:8px}
+  .button-group .btn{padding:10px 16px;font-size:.85rem}
+  .result-number{font-size:1.8rem}
+  .result-price{font-size:1.5rem}
+  .option-grid{grid-template-columns:1fr}
+}
+
+.hidden{display:none}
+footer{text-align:center;margin-top:32px;padding:20px 0;font-size:.75rem;color:var(--text-faint);line-height:1.8;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>PANEL X</h1>
+  <p class="tagline">Project Calculator</p>
+</div>
+
+<div class="wrap">
+
+<!-- PROGRESS -->
+<div class="progress-wrap">
+  <div class="progress-bar">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+  <div class="progress-text" id="progressText">Step 1 of 5</div>
+</div>
+
+<!-- STEPS CONTAINER -->
+<div id="stepsContainer">
+
+<!-- STEP 1: CUSTOMER INFO -->
+<div class="step active" id="step1">
+  <div class="card">
+    <div class="card-title">Customer Information</div>
+    <div class="card-subtitle">Let's start with the basics</div>
+    
+    <label>Customer name</label>
+    <input type="text" id="custName" placeholder="Juan dela Cruz">
+    
+    <label>Phone number</label>
+    <input type="tel" id="custPhone" placeholder="0917 123 4567">
+    
+    <label>Project address</label>
+    <input type="text" id="custAddress" placeholder="Street, Barangay, City">
+    
+    <label>Special notes (optional)</label>
+    <textarea id="custNotes" placeholder="Any special requirements or preferences..."></textarea>
+    
+    <button class="btn btn-primary btn-nav" onclick="nextStep()">Next: Select Area Type</button>
+  </div>
+</div>
+
+<!-- STEP 2: AREA TYPE -->
+<div class="step" id="step2">
+  <div class="card">
+    <div class="card-title">What are you covering?</div>
+    <div class="card-subtitle">Choose the area type</div>
+    
+    <div class="option-grid">
+      <div class="option-card" onclick="selectMode('wall')">
+        <div class="icon">🧱</div>
+        <div class="name">Wall Panels</div>
+        <div class="desc">Fluted or smooth wall cladding</div>
+      </div>
+      <div class="option-card" onclick="selectMode('ceiling')">
+        <div class="icon">⬜</div>
+        <div class="name">Ceiling</div>
+        <div class="desc">PVC ceiling tiles</div>
+      </div>
+      <div class="option-card" onclick="selectMode('staircase')">
+        <div class="icon">🪜</div>
+        <div class="name">Staircase</div>
+        <div class="desc">Complex custom areas</div>
+      </div>
+    </div>
+    
+    <div class="button-group">
+      <button class="btn btn-secondary" onclick="prevStep()">Back</button>
+      <button class="btn btn-primary" id="nextStep2" disabled onclick="nextStep()">Select Area Type</button>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 3: DIMENSIONS -->
+<div class="step" id="step3">
+  <div class="card">
+    <div class="card-title" id="step3Title">Wall Dimensions</div>
+    <div class="card-subtitle">Enter measurements</div>
+    
+    <div id="wallInputs">
+      <label>Product</label>
+      <select id="wallProduct" onchange="updateSummary()">
+        <option value="fluted4in1">WPC Indoor Fluted 4in1 - 160mm</option>
+        <option value="fluted5in1">WPC Indoor Fluted 5in1 - 150mm</option>
+        <option value="outBrushed">Outdoor Fluted Brushed - 220mm</option>
+        <option value="outCoEx">Outdoor Fluted Co-Extrusion - 220mm</option>
+      </select>
+      
+      <label>Wall height</label>
+      <input type="number" id="wallHeight" min="1" max="5" step="0.1" placeholder="e.g. 2.9" value="2.9" onchange="updateSummary()">
+      <div class="hint">in metres</div>
+      
+      <label>Wall width</label>
+      <input type="number" id="wallWidth" min="1" max="10" step="0.1" placeholder="e.g. 3" value="3" onchange="updateSummary()">
+      <div class="hint">in metres</div>
+    </div>
+    
+    <div id="ceilingInputs" class="hidden">
+      <label>Product</label>
+      <select id="ceilingProduct" onchange="updateSummary()">
+        <option value="pvcSeamless_2_9">PVC Seamless Ceiling - 2.9m</option>
+        <option value="pvcSeamless_3_0">PVC Seamless Ceiling - 3.0m</option>
+        <option value="pvcGroove_2_9">PVC Groove Ceiling - 2.9m</option>
+        <option value="pvcGroove_3_0">PVC Groove Ceiling - 3.0m</option>
+      </select>
+      
+      <label>Room length</label>
+      <input type="number" id="ceilLength" min="1" max="10" step="0.1" placeholder="e.g. 4" value="4" onchange="updateSummary()">
+      <div class="hint">in metres</div>
+      
+      <label>Room width</label>
+      <input type="number" id="ceilWidth" min="1" max="10" step="0.1" placeholder="e.g. 3.5" value="3.5" onchange="updateSummary()">
+      <div class="hint">in metres</div>
+    </div>
+    
+    <div class="summary-box">
+      <div class="summary-label">Estimated area</div>
+      <div class="summary-value" id="areaEstimate">0 sq.m</div>
+    </div>
+    
+    <div class="button-group">
+      <button class="btn btn-secondary" onclick="prevStep()">Back</button>
+      <button class="btn btn-primary" onclick="nextStep()">Next: Review Prices</button>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 4: PRICES & OPTIONS -->
+<div class="step" id="step4">
+  <div class="card">
+    <div class="card-title">Costs & Settings</div>
+    <div class="card-subtitle">Adjust if needed</div>
+    
+    <label>Labour rate (per sq.m)</label>
+    <input type="number" id="labourRate" min="0" step="100" placeholder="0" value="0" onchange="updateResults()">
+    <div class="hint">Leave blank to skip labour costs</div>
+    
+    <label>Wastage allowance</label>
+    <select id="waste" onchange="updateResults()">
+      <option value="10">10% - Standard (straight cuts)</option>
+      <option value="15" selected>15% - Some cuts needed</option>
+      <option value="20">20% - Tricky layout</option>
+      <option value="25">25% - Very complex</option>
+    </select>
+    <div class="hint">Extra material for cuts and waste</div>
+    
+    <div class="button-group">
+      <button class="btn btn-secondary" onclick="prevStep()">Back</button>
+      <button class="btn btn-primary" onclick="nextStep()">Next: Review Estimate</button>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 5: RESULTS & PRINT -->
+<div class="step" id="step5">
+  <div class="card result-card">
+    <div class="result-title">
+      <div>
+        <div class="result-number" id="totalPanels">0</div>
+        <div class="result-label">Panels</div>
+      </div>
+      <div style="text-align:right">
+        <div class="result-price" id="totalPrice">0</div>
+        <div class="result-price-label">Total estimate</div>
+      </div>
+    </div>
+    
+    <div id="resultsBreakdown"></div>
+  </div>
+  
+  <div class="card">
+    <div class="card-title">Area Summary</div>
+    <div id="roomsSummary"></div>
+    
+    <div class="print-btn show">
+      <button class="btn btn-secondary" style="width:100%;margin-top:16px" onclick="window.print()">Print or Save as PDF</button>
+    </div>
+    
+    <div class="button-group" style="margin-top:20px">
+      <button class="btn btn-secondary" onclick="prevStep()">Back to adjust</button>
+      <button class="btn btn-primary" onclick="resetAndStart()">Start New Estimate</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<footer>
+  Panel X Home Improvement  |  San Miguel, Bulacan  |  0920 670 6672<br>
+  Estimates are for budgeting only. Confirm measurements on site before ordering.
+</footer>
+
+</div>
+
+<script>
+// PRODUCT DATA
+const WALL_PRODUCTS = {
+  fluted4in1:{name:"WPC Indoor Fluted 4in1",width:160,length:2.9,price:360},
+  fluted5in1:{name:"WPC Indoor Fluted 5in1",width:150,length:2.9,price:320},
+  outBrushed:{name:"Outdoor Fluted Brushed",width:220,length:2.9,price:900},
+  outCoEx:{name:"Outdoor Fluted Co-Extrusion",width:220,length:2.9,price:1000},
+};
+
+const CEILING_PRODUCTS = {
+  pvcSeamless_2_9:{name:"PVC Seamless Ceiling 2.9m",width:200,price:180},
+  pvcSeamless_3_0:{name:"PVC Seamless Ceiling 3.0m",width:200,price:190},
+  pvcGroove_2_9:{name:"PVC Groove Ceiling 2.9m",width:250,price:225},
+  pvcGroove_3_0:{name:"PVC Groove Ceiling 3.0m",width:250,price:235},
+};
+
+// STATE
+let currentStep = 1;
+let currentMode = 'wall';
+const totalSteps = 5;
+
+function goToStep(step) {
+  if(step < 1 || step > totalSteps) return;
+  document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+  document.getElementById('step' + step).classList.add('active');
+  currentStep = step;
+  updateProgress();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function nextStep() {
+  if(currentStep < totalSteps) goToStep(currentStep + 1);
+  if(currentStep === totalSteps) updateResults();
+}
+
+function prevStep() {
+  if(currentStep > 1) goToStep(currentStep - 1);
+}
+
+function updateProgress() {
+  const pct = (currentStep / totalSteps) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').innerText = `Step ${currentStep} of ${totalSteps}`;
+}
+
+function selectMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.option-card').forEach(el => el.classList.remove('selected'));
+  event.target.closest('.option-card').classList.add('selected');
+  document.getElementById('nextStep2').disabled = false;
+  
+  // Update step 3 labels and inputs
+  if(mode === 'wall') {
+    document.getElementById('step3Title').innerText = 'Wall Dimensions';
+    document.getElementById('wallInputs').classList.remove('hidden');
+    document.getElementById('ceilingInputs').classList.add('hidden');
+  } else {
+    document.getElementById('step3Title').innerText = 'Ceiling Dimensions';
+    document.getElementById('wallInputs').classList.add('hidden');
+    document.getElementById('ceilingInputs').classList.remove('hidden');
+  }
+}
+
+function updateSummary() {
+  let area = 0;
+  if(currentMode === 'wall') {
+    const h = parseFloat(document.getElementById('wallHeight').value) || 0;
+    const w = parseFloat(document.getElementById('wallWidth').value) || 0;
+    area = h * w;
+  } else {
+    const l = parseFloat(document.getElementById('ceilLength').value) || 0;
+    const w = parseFloat(document.getElementById('ceilWidth').value) || 0;
+    area = l * w;
+  }
+  document.getElementById('areaEstimate').innerText = area.toFixed(1) + ' sq.m';
+}
+
+function updateResults() {
+  let panels = 0, panelCost = 0, labourCost = 0, waste = 0;
+  
+  const labourRate = parseFloat(document.getElementById('labourRate').value) || 0;
+  const wastageMultiplier = (100 + parseFloat(document.getElementById('waste').value)) / 100;
+  
+  if(currentMode === 'wall') {
+    const product = WALL_PRODUCTS[document.getElementById('wallProduct').value];
+    const h = parseFloat(document.getElementById('wallHeight').value) || 0;
+    const w = parseFloat(document.getElementById('wallWidth').value) || 0;
+    const area = h * w;
+    
+    // Simple calculation: area / (width in metres)
+    panels = Math.ceil((area / (product.width / 1000)) * wastageMultiplier);
+    panelCost = panels * product.price;
+    labourCost = area * labourRate;
+  } else {
+    const product = CEILING_PRODUCTS[document.getElementById('ceilingProduct').value];
+    const l = parseFloat(document.getElementById('ceilLength').value) || 0;
+    const w = parseFloat(document.getElementById('ceilWidth').value) || 0;
+    const area = l * w;
+    
+    panels = Math.ceil((area / (product.width / 1000)) * wastageMultiplier);
+    panelCost = panels * product.price;
+    labourCost = area * labourRate;
+  }
+  
+  const total = panelCost + labourCost;
+  
+  document.getElementById('totalPanels').innerText = panels.toLocaleString();
+  document.getElementById('totalPrice').innerText = 'PHP ' + Math.round(total).toLocaleString();
+  
+  // Breakdown
+  const breakdown = `
+    <div style="font-size:.85rem;color:var(--text-dim);line-height:1.8">
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line-soft)">
+        <span>${panels} panels @ PHP ${currentMode === 'wall' ? WALL_PRODUCTS[document.getElementById('wallProduct').value].price : CEILING_PRODUCTS[document.getElementById('ceilingProduct').value].price}/ea</span>
+        <strong>PHP ${panelCost.toLocaleString()}</strong>
+      </div>
+      ${labourCost > 0 ? `<div style="display:flex;justify-content:space-between;padding:8px 0">
+        <span>Labour</span>
+        <strong>PHP ${labourCost.toLocaleString()}</strong>
+      </div>` : ''}
+    </div>
+  `;
+  document.getElementById('resultsBreakdown').innerHTML = breakdown;
+  
+  // Summary
+  const summary = `
+    <div class="room-item">
+      <span class="room-item-name">${currentMode === 'wall' ? 'Wall Area' : 'Ceiling Area'}</span>
+      <span class="room-item-stat">${currentMode === 'wall' 
+        ? (parseFloat(document.getElementById('wallHeight').value) * parseFloat(document.getElementById('wallWidth').value)).toFixed(1)
+        : (parseFloat(document.getElementById('ceilLength').value) * parseFloat(document.getElementById('ceilWidth').value)).toFixed(1)} sq.m</span>
+    </div>
+  `;
+  document.getElementById('roomsSummary').innerHTML = summary;
+}
+
+function resetAndStart() {
+  document.getElementById('custName').value = '';
+  document.getElementById('custPhone').value = '';
+  document.getElementById('custAddress').value = '';
+  document.getElementById('custNotes').value = '';
+  goToStep(1);
+}
+
+// Init
+updateProgress();
+</script>
+
+</body>
+</html>
